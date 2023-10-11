@@ -1,25 +1,24 @@
 #' @import shiny
 app_ui <- function() {
-   options <- list()
+  options <- list()
 
   tagList(
     # External resources
     golem_add_external_resources(),
-    
+
+
     # The actual UI
     pagePiling(
       sections.color = c("#2f2f2f", "#2f2f2f", "#f9f7f1", "#2f2f2f", "#f9f7f1", "#8a0f0f"),
       opts = options,
-      
+
       # Add a custom class to the menu
       menu = c(
-  "Home" = "home",
-  "Map" = "map",
-  "Series" = "ts",
-  "About" = "about",
-  "Unknown" = "unknown", 
-  "Extra" = "extra"
-),
+        "Home" = "home",
+        "Map" = "map",
+        "Series" = "ts",
+        "About" = "about"
+      ),
       pageSectionImage(
         center = TRUE,
         img = "www/img/mel.jpg",
@@ -52,20 +51,6 @@ app_ui <- function() {
           class = "light footer",
           "by", tags$a("news-r", href = "https://news-r.org", class = "link"), "with", emo::ji("coffee")
         )
-      ),
-      # Existing "Unknown" section content
-      pageSection(
-        center = TRUE,
-        menu = "unknown",
-        h1("Unknown Content", class = "header shadow-dark"),
-        h2("This section is under development.")
-      ),
-      # New "Extra" section content
-      pageSection(
-        center = TRUE,
-        menu = "extra",
-        h1("Extra Content", class = "header shadow-dark"),
-        h2("This section is for additional content.")
       )
     )
   )
