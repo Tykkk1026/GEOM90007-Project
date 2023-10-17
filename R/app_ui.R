@@ -1,6 +1,9 @@
 #' @import shiny
 app_ui <- function() {
-  options <- list()
+  options <- list(
+    scrollingSpeed = 0,
+    normalScrollElements = '#pagepiling'  # 禁止在整个 pagePiling 容器上使用 pagePiling 滚动
+  )
 
   tagList(
     # External resources
