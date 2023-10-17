@@ -1,15 +1,12 @@
 #' @import shiny
 app_ui <- function() {
   options <- list(
-    scrollingSpeed = 0,
-    normalScrollElements = '#pagepiling'  # 禁止在整个 pagePiling 容器上使用 pagePiling 滚动
+    normalScrollElements =  'body'
   )
 
   tagList(
     # External resources
     golem_add_external_resources(),
-
-
     # The actual UI
     pagePiling(
       sections.color = c("#2f2f2f", "#2f2f2f", "#f9f7f1", "#2f2f2f", "#f9f7f1", "#8a0f0f"),

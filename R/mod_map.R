@@ -125,7 +125,7 @@ mod_map_ui <- function(id) {
       uiOutput(ns("dynamicCheckboxCafe")),
       uiOutput(ns("dynamicCheckboxConvenience"))
     ),
-    #div(id = "weather"),
+
     mapboxer::mapboxerOutput(ns("map"), height = "50vh")
   )
 }
