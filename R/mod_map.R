@@ -110,7 +110,6 @@ mod_map_ui <- function(id) {
       uiOutput(ns("dynamicCheckboxTram")),
       uiOutput(ns("dynamicCheckboxTrain"))
     ),
-    div(id = "weather"),
     
     tags$div(
       style = "display: block; align-items: flex; color: white;",
