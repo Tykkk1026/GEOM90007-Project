@@ -11,6 +11,7 @@ library(mapboxer)
 library(sf)
 library(shiny)
 library(dplyr)
+library(httr)
 
 # read in gdb data and convert shape info into longitude and latitude
 bus_regional_rt <- st_read("inst/data/BusRoute.gdb")
@@ -144,6 +145,14 @@ mod_map_ui <- function(id) {
       uiOutput(ns("dynamicCheckboxInformal")),
       uiOutput(ns("parking"))
     ),
+  tags$div(
+      style = "position: absolute; top: 300px; left: 10px; z-index: 1000; background-color: rgba(255,255,255,0.8); padding: 10px;",
+      uiOutput(ns("weatherIconUI")),
+      tags$p(textOutput(ns("temp"))), # 温度
+      tags$p(textOutput(ns("current_time")))
+  ),
+
+    
 
     mapboxer::mapboxerOutput(ns("map"), height = "80vh")
   )
@@ -156,6 +165,29 @@ mod_map_ui <- function(id) {
 #'
 #' @noRd
 mod_map_server <- function(input, output, session) {
+  api_key <- "c37e5052fb47c03e8b89e598a178caec"
+  city <- "Melbourne,AU"
+  response <- GET(paste0("http://api.openweathermap.org/data/2.5/weather?q=", city, "&appid=", api_key))
+  weather_data <- content(response)
+
+  output$current_time <- renderText({
+      strftime(Sys.time(), format = "%m-%d %H:%M:%S")
+  })
+
+  output$temp <- renderText({
+    paste(round(weather_data$main$temp - 273.15, 1), "°C")
+  })
+  
+  output$weatherIconUI <- renderUI({
+    icon_code <- weather_data$weather[[1]]$icon
+    icon_url <- paste0("http://openweathermap.org/img/wn/", icon_code, "@2x.png")
+    tags$img(src = icon_url, alt = "Weather icon", width = "80px", height = "80px")
+  })
+
+
+
+
+  
   observeEvent(input$btn_map1, {
     output$map <- mapboxer::renderMapboxer({
       mapboxer::mapboxer(
