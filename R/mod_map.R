@@ -9,9 +9,11 @@
 #' @importFrom shiny NS tagList
 library(mapboxer)
 library(sf)
+library(geojsonsf)
 library(shiny)
 library(dplyr)
 library(httr)
+library(shinyjs)
 
 # read in gdb data and convert shape info into longitude and latitude
 bus_regional_rt <- st_read("inst/data/BusRoute.gdb")
@@ -37,10 +39,6 @@ bicycle_rt <- st_read("inst/data/GEOM90007_Assignment3.gdb",
 )
 bicycle_rt <- st_transform(bicycle_rt, 4326)
 
-m_bound <- st_read("inst/data/GEOM90007_Assignment3.gdb",
-  layer = "Melbourne_Municipal_Boundary_MGA"
-)
-m_bound <- st_transform(m_bound, 4326)
 
 cafe <- read.csv("inst/data/cafes-and-restaurants-with-seating-capacity.csv")
 cafe <- subset(cafe, cafe$Industry..ANZSIC4..description == "Cafes and Restaurants" |
@@ -63,8 +61,6 @@ names(cafe)[4] <- "lat"
 names(cafe)[2] <- "name"
 convenience <- subset(cafe, cafe$facility == "convenience")
 cafe <- subset(cafe, cafe$facility == "cafe")
-# cafe$icon <- icon(class="fa-sharp fa-solid fa-burger-soda", lib = 'fa')
-# cafe$icon <- "fa-sharp fa-solid fa-burger-soda"
 
 toilet <- read.csv("inst/data/public-toilets.csv")
 toilet <- cbind(rep("toilet", nrow(toilet)), toilet)
@@ -86,8 +82,6 @@ toilet <- cbind(toilet, sex)
 toilet[, 2] <- toilet[, 6]
 names(toilet)[2] <- "name"
 toilet <- toilet[, c("facility", "name", "lon", "lat")]
-# toilet$icon <- icon(class="fa-solid fa-person", lib = 'fa')
-# toilet$icon <- "fa-solid fa-person"
 
 # Separate different type bicycle routes
 on_road_bicy <- st_as_sf(bicycle_rt) %>% filter(type == "On-Road Bike Lane")
@@ -111,6 +105,13 @@ city_work <- st_read("inst/data/city-activities-and-planned-works.geojson")
 city_work <- st_transform(city_work, 4326)
 
 
+# 灯光
+feature_lighting <- st_read("inst/data/feature-lighting-including-light-type-wattage-and-location.geojson")
+
+# 树荫
+tree_canopies <- geojson_sf("inst/data/tree-canopies-2021-urban-forest.geojson")
+
+
 
 
 mod_map_ui <- function(id) {
@@ -119,7 +120,8 @@ mod_map_ui <- function(id) {
     h2("Melbourne Map", class = "light"),
     actionButton(ns("btn_map1"), "Public Transport"),
     actionButton(ns("btn_map2"), "Bicycle Route"),
-    actionButton(ns("btn_map3"), "Traffic and Pedestrian"),
+    actionButton(ns("btn_map3"), "Traffic"),
+    actionButton(ns("btn_map4"), "Pedestrian"),
     tags$div(
       style = "display: flex; align-items: center; color: white;",
       uiOutput(ns("dynamicCheckboxBus")),
@@ -130,7 +132,9 @@ mod_map_ui <- function(id) {
       style = "display: flex; align-items: center; color: white;",
       uiOutput(ns("dynamicCheckboxToilet")),
       uiOutput(ns("dynamicCheckboxCafe")),
-      uiOutput(ns("dynamicCheckboxConvenience"))
+      uiOutput(ns("dynamicCheckboxConvenience")),
+      uiOutput(ns("dynamicCheckboxLight")),
+      uiOutput(ns("dynamicCheckboxTree"))
     ),
     tags$div(
       style = "display: flex; align-items: center; color: white;",
@@ -145,17 +149,120 @@ mod_map_ui <- function(id) {
       uiOutput(ns("dynamicCheckboxInformal")),
       uiOutput(ns("parking"))
     ),
-  tags$div(
+    tags$div(
       style = "position: absolute; top: 300px; left: 10px; z-index: 1000; background-color: rgba(255,255,255,0.8); padding: 10px;",
       uiOutput(ns("weatherIconUI")),
-      tags$p(textOutput(ns("temp"))), # 温度
+      tags$p(textOutput(ns("temp"))),
       tags$p(textOutput(ns("current_time")))
-  ),
-
-    
-
-    mapboxer::mapboxerOutput(ns("map"), height = "80vh")
+    ),
+    mapboxer::mapboxerOutput(ns("map"), height = "80vh"),
   )
+}
+
+
+
+
+load_map1_content <- function(output, session) {
+  output$map <- mapboxer::renderMapboxer({
+    mapboxer::mapboxer(
+      center = c(144.9631, -37.8136),
+      zoom = 15,
+    ) %>%
+      add_navigation_control() %>%
+      # Bus routes and stops
+      mapboxer::add_line_layer(
+        source = as_mapbox_source(bus_data),
+        line_color = "#1E90FF", # Bright blue for bus route
+        line_width = 3,
+        line_opacity = 0.8,
+        id = "bus_route",
+        visibility = FALSE,
+        popup = paste0(
+          "<strong>Route Name:</strong> {{ROUTE_SHORT_NAME}}<br>",
+          "<strong>First Stop:</strong> {{FIRST_STOP_NAME}}<br>",
+          "<strong>Last Stop:</strong> {{LAST_STOP_NAME}}<br>"
+        )
+      ) %>%
+      mapboxer::add_circle_layer(
+        source = as_mapbox_source(bus_stop),
+        circle_color = "#1E90FF",
+        circle_radius = 6,
+        circle_stroke_color = "white",
+        circle_stroke_width = 1.5,
+        id = "bus_stop",
+        visibility = FALSE,
+        popup = paste0("<strong>Stop Name:</strong> {{STOP_NAME}}")
+      ) %>%
+      # Tram routes and stops
+      mapboxer::add_line_layer(
+        source = as_mapbox_source(tram_data),
+        line_color = "#3CB371", # Medium sea green for tram route
+        line_width = 3,
+        id = "tram_route",
+        visibility = FALSE,
+        popup = paste0(
+          "<strong>Route Name:</strong> {{ROUTE_SHORT_NAME}}<br>",
+          "<strong>First Stop:</strong> {{FIRST_STOP_NAME}}<br>",
+          "<strong>Last Stop:</strong> {{LAST_STOP_NAME}}<br>"
+        )
+      ) %>%
+      mapboxer::add_circle_layer(
+        source = as_mapbox_source(tram_stop),
+        circle_color = "#3CB371",
+        circle_radius = 6,
+        circle_stroke_color = "white",
+        circle_stroke_width = 1.5,
+        id = "tram_stop",
+        visibility = FALSE,
+        popup = paste0("<strong>Stop Name:</strong> {{STOP_NAME}}")
+      ) %>%
+      # Train routes and stops
+      mapboxer::add_line_layer(
+        source = as_mapbox_source(train_data),
+        line_color = "#FF4500", # Orange-red for train route
+        line_width = 3,
+        id = "train_route",
+        visibility = FALSE,
+        popup = paste0(
+          "<strong>Route Name:</strong> {{SEGMENT_NAME}}<br>"
+        )
+      ) %>%
+      mapboxer::add_circle_layer(
+        source = as_mapbox_source(train_stop),
+        circle_color = "#FF4500",
+        circle_radius = 6,
+        circle_stroke_color = "white",
+        circle_stroke_width = 1.5,
+        id = "train_stop",
+        visibility = FALSE,
+        popup = paste0("<strong>Stop Name:</strong> {{STOP_NAME}}")
+      )
+  })
+
+  output$dynamicCheckboxBus <- renderUI({
+    checkboxInput(session$ns("show_bus_route"), "Show Bus Route", value = FALSE)
+  })
+
+  output$dynamicCheckboxTram <- renderUI({
+    checkboxInput(session$ns("show_tram_route"), "Show Tram Route", value = FALSE)
+  })
+
+  output$dynamicCheckboxTrain <- renderUI({
+    checkboxInput(session$ns("show_train_route"), "Show Train Route", value = FALSE)
+  })
+
+  output$dynamicCheckboxCorridor <- renderUI({})
+  output$dynamicCheckboxOnRoad <- renderUI({})
+  output$dynamicCheckboxOffRoad <- renderUI({})
+  output$dynamicCheckboxInformal <- renderUI({})
+  output$dynamicCheckboxToilet <- renderUI({})
+  output$dynamicCheckboxCafe <- renderUI({})
+  output$dynamicCheckboxConvenience <- renderUI({})
+  output$dynamicCheckboxTraffic <- renderUI({})
+  output$dynamicCheckboxCity <- renderUI({})
+  output$parking <- renderUI({})
+  output$dynamicCheckboxTree <- renderUI({})
+  output$dynamicCheckboxLight <- renderUI({})
 }
 
 
@@ -171,122 +278,25 @@ mod_map_server <- function(input, output, session) {
   weather_data <- content(response)
 
   output$current_time <- renderText({
-      strftime(Sys.time(), format = "%m-%d %H:%M:%S")
+    strftime(Sys.time(), format = "%m-%d %H:%M:%S")
   })
 
   output$temp <- renderText({
     paste(round(weather_data$main$temp - 273.15, 1), "°C")
   })
-  
+
   output$weatherIconUI <- renderUI({
     icon_code <- weather_data$weather[[1]]$icon
     icon_url <- paste0("http://openweathermap.org/img/wn/", icon_code, "@2x.png")
     tags$img(src = icon_url, alt = "Weather icon", width = "80px", height = "80px")
   })
 
+  load_map1_content(output, session)
 
-
-
-  
   observeEvent(input$btn_map1, {
-    output$map <- mapboxer::renderMapboxer({
-      mapboxer::mapboxer(
-        center = c(144.9631, -37.8136),
-        zoom = 15,
-      ) %>%add_navigation_control() %>%
-        # Bus routes and stops
-        mapboxer::add_line_layer(
-          source = as_mapbox_source(bus_data),
-          line_color = "#1E90FF", # Bright blue for bus route
-          line_width = 3,
-          line_opacity = 0.8,
-          id = "bus_route",
-          visibility = FALSE,
-          popup = paste0(
-            "<strong>Route Name:</strong> {{ROUTE_SHORT_NAME}}<br>",
-            "<strong>First Stop:</strong> {{FIRST_STOP_NAME}}<br>",
-            "<strong>Last Stop:</strong> {{LAST_STOP_NAME}}<br>"
-          )
-        ) %>%
-        mapboxer::add_circle_layer(
-          source = as_mapbox_source(bus_stop),
-          circle_color = "#1E90FF",
-          circle_radius = 6,
-          circle_stroke_color = "white",
-          circle_stroke_width = 1.5,
-          id = "bus_stop",
-          visibility = FALSE,
-          popup = paste0("<strong>Stop Name:</strong> {{STOP_NAME}}")
-        ) %>%
-        # Tram routes and stops
-        mapboxer::add_line_layer(
-          source = as_mapbox_source(tram_data),
-          line_color = "#3CB371", # Medium sea green for tram route
-          line_width = 3,
-          id = "tram_route",
-          visibility = FALSE,
-          popup = paste0(
-            "<strong>Route Name:</strong> {{ROUTE_SHORT_NAME}}<br>",
-            "<strong>First Stop:</strong> {{FIRST_STOP_NAME}}<br>",
-            "<strong>Last Stop:</strong> {{LAST_STOP_NAME}}<br>"
-          )
-        ) %>%
-        mapboxer::add_circle_layer(
-          source = as_mapbox_source(tram_stop),
-          circle_color = "#3CB371",
-          circle_radius = 6,
-          circle_stroke_color = "white",
-          circle_stroke_width = 1.5,
-          id = "tram_stop",
-          visibility = FALSE,
-          popup = paste0("<strong>Stop Name:</strong> {{STOP_NAME}}")
-        ) %>%
-        # Train routes and stops
-        mapboxer::add_line_layer(
-          source = as_mapbox_source(train_data),
-          line_color = "#FF4500", # Orange-red for train route
-          line_width = 3,
-          id = "train_route",
-          visibility = FALSE,
-          popup = paste0(
-            "<strong>Route Name:</strong> {{SEGMENT_NAME}}<br>"
-          )
-        ) %>%
-        mapboxer::add_circle_layer(
-          source = as_mapbox_source(train_stop),
-          circle_color = "#FF4500",
-          circle_radius = 6,
-          circle_stroke_color = "white",
-          circle_stroke_width = 1.5,
-          id = "train_stop",
-          visibility = FALSE,
-          popup = paste0("<strong>Stop Name:</strong> {{STOP_NAME}}")
-        )
-    })
-
-    output$dynamicCheckboxBus <- renderUI({
-      checkboxInput(session$ns("show_bus_route"), "Show Bus Route", value = FALSE)
-    })
-
-    output$dynamicCheckboxTram <- renderUI({
-      checkboxInput(session$ns("show_tram_route"), "Show Tram Route", value = FALSE)
-    })
-
-    output$dynamicCheckboxTrain <- renderUI({
-      checkboxInput(session$ns("show_train_route"), "Show Train Route", value = FALSE)
-    })
-
-    output$dynamicCheckboxCorridor <- renderUI({})
-    output$dynamicCheckboxOnRoad <- renderUI({})
-    output$dynamicCheckboxOffRoad <- renderUI({})
-    output$dynamicCheckboxInformal <- renderUI({})
-    output$dynamicCheckboxToilet <- renderUI({})
-    output$dynamicCheckboxCafe <- renderUI({})
-    output$dynamicCheckboxConvenience <- renderUI({})
-    output$dynamicCheckboxTraffic <- renderUI({})
-    output$dynamicCheckboxCity <- renderUI({})
-    output$parking <- renderUI({})
+    load_map1_content(output, session)
   })
+
 
 
   observe({
@@ -450,6 +460,8 @@ mod_map_server <- function(input, output, session) {
     output$dynamicCheckboxTraffic <- renderUI({})
     output$dynamicCheckboxCity <- renderUI({})
     output$parking <- renderUI({})
+    output$dynamicCheckboxTree <- renderUI({})
+    output$dynamicCheckboxLight <- renderUI({})
   })
 
   observe({
@@ -578,6 +590,8 @@ mod_map_server <- function(input, output, session) {
     output$dynamicCheckboxBus <- renderUI({})
     output$dynamicCheckboxTram <- renderUI({})
     output$dynamicCheckboxTrain <- renderUI({})
+    output$dynamicCheckboxTree <- renderUI({})
+    output$dynamicCheckboxLight <- renderUI({})
   })
 
   observe({
@@ -621,20 +635,157 @@ mod_map_server <- function(input, output, session) {
         "case",
         list("==", c("get", "status_description"), "Unoccupied"), "green",
         list("==", c("get", "status_description"), "Present"), "red",
-        "transparent" 
+        "transparent"
       )
     )
-
     proxy <- set_paint_property(proxy, "parking", "circle-color", parking_color)
     update_mapboxer(proxy, session$ns("map"))
   })
+
+  observeEvent(input$btn_map4, {
+    output$map <- mapboxer::renderMapboxer({
+      mapboxer::mapboxer(
+        center = c(144.9631, -37.8136),
+        zoom = 15,
+        style =
+        ) %>%
+        add_navigation_control() %>%
+        mapboxer::add_fill_layer(
+          source = as_mapbox_source(tree_canopies),
+          fill_color = list(
+            "interpolate",
+            list("linear"),
+            list("heatmap-density"),
+            0, "lightgreen",
+            0.5, "limegreen",
+            1, "darkgreen"
+          ),
+          fill_opacity = 0.5,
+          visibility = FALSE,
+          id = "tree",
+          popup = "Location: {{location}}<br>Notes: {{notes}}"
+        ) %>%
+        mapboxer::add_circle_layer(
+          source = as_mapbox_source(feature_lighting),
+          circle_color = "yellow",
+          circle_radius = list(
+            "interpolate",
+            list("linear"),
+            list("get", "lamp_rating_w"),
+            0, 5,
+            100, 50 # Adjust as needed based on wattage range in your data
+          ),
+          circle_opacity = 0.5,
+          circle_blur = 0.5, # This will blur the edges of the circles
+          popup = "{{lamp_type_lupvalue}}: {{lamp_rating_w}}W",
+          id = "light",
+          visibility = FALSE
+        ) %>%
+        mapboxer::add_circle_layer(
+          source = toilet %>% as_mapbox_source(lng = "lon", lat = "lat"),
+          circle_color = "#4dff4d",
+          circle_radius = 6,
+          circle_stroke_color = "white",
+          circle_stroke_width = 1.5,
+          id = "toilet",
+          visibility = FALSE,
+          popup = paste0("<strong>Toilet:</strong> {{name}}")
+        ) %>%
+        # cafe
+        mapboxer::add_circle_layer(
+          source = cafe %>% as_mapbox_source(lng = "lon", lat = "lat"),
+          circle_color = "#ff99cc",
+          circle_radius = 6,
+          circle_stroke_color = "white",
+          circle_stroke_width = 1.5,
+          id = "cafe",
+          visibility = FALSE,
+          popup = paste0("<strong>Cafe and Resturuant:</strong> {{name}}")
+        ) %>%
+        # convenience store
+        mapboxer::add_circle_layer(
+          source = convenience %>% as_mapbox_source(lng = "lon", lat = "lat"),
+          circle_color = "#668cff",
+          circle_radius = 6,
+          circle_stroke_color = "white",
+          circle_stroke_width = 1.5,
+          id = "convenience",
+          visibility = FALSE,
+          popup = paste0("<strong>Convenience Store:</strong> {{name}}")
+        )
+    })
+
+    output$dynamicCheckboxToilet <- renderUI({
+      checkboxInput(session$ns("show_toilet"), "Public Toilet", value = FALSE)
+    })
+
+    output$dynamicCheckboxCafe <- renderUI({
+      checkboxInput(session$ns("show_cafe"), "Cafe and Resturuant", value = FALSE)
+    })
+
+    output$dynamicCheckboxConvenience <- renderUI({
+      checkboxInput(session$ns("show_convenience"), "Convenience Store", value = FALSE)
+    })
+    output$dynamicCheckboxTree <- renderUI({
+      checkboxInput(session$ns("show_tree_canopies"), "Show Tree Canopies", value = FALSE)
+    })
+
+    output$dynamicCheckboxLight <- renderUI({
+      checkboxInput(session$ns("show_feature_lighting"), "Show Feature Lighting", value = FALSE)
+    })
+
+    output$dynamicCheckboxCorridor <- renderUI({})
+    output$dynamicCheckboxOnRoad <- renderUI({})
+    output$dynamicCheckboxOffRoad <- renderUI({})
+    output$dynamicCheckboxInformal <- renderUI({})
+    output$dynamicCheckboxBus <- renderUI({})
+    output$dynamicCheckboxTram <- renderUI({})
+    output$dynamicCheckboxTrain <- renderUI({})
+    output$dynamicCheckboxTraffic <- renderUI({})
+    output$dynamicCheckboxCity <- renderUI({})
+    output$parking <- renderUI({})
+  })
+
+  observe({
+    if (is.null(input$show_feature_lighting)) {
+      return()
+    }
+    proxy <- mapboxer_proxy(session$ns("map"))
+    if (input$show_feature_lighting) {
+      proxy <- set_layout_property(proxy, "light", "visibility", TRUE)
+      update_mapboxer(proxy, session$ns("map"))
+    } else {
+      proxy <- set_layout_property(proxy, "light", "visibility", FALSE)
+      update_mapboxer(proxy, session$ns("map"))
+    }
+
+    if (input$show_tree_canopies) {
+      proxy <- set_layout_property(proxy, "tree", "visibility", TRUE)
+      update_mapboxer(proxy, session$ns("map"))
+    } else {
+      proxy <- set_layout_property(proxy, "tree", "visibility", FALSE)
+      update_mapboxer(proxy, session$ns("map"))
+    }
+    if (input$show_toilet) {
+      proxy <- set_layout_property(proxy, "toilet", "visibility", TRUE)
+      update_mapboxer(proxy, session$ns("map"))
+    } else {
+      proxy <- set_layout_property(proxy, "toilet", "visibility", FALSE)
+      update_mapboxer(proxy, session$ns("map"))
+    }
+    if (input$show_cafe) {
+      proxy <- set_layout_property(proxy, "cafe", "visibility", TRUE)
+      update_mapboxer(proxy, session$ns("map"))
+    } else {
+      proxy <- set_layout_property(proxy, "cafe", "visibility", FALSE)
+      update_mapboxer(proxy, session$ns("map"))
+    }
+    if (input$show_convenience) {
+      proxy <- set_layout_property(proxy, "convenience", "visibility", TRUE)
+      update_mapboxer(proxy, session$ns("map"))
+    } else {
+      proxy <- set_layout_property(proxy, "convenience", "visibility", FALSE)
+      update_mapboxer(proxy, session$ns("map"))
+    }
+  })
 }
-
-
-
-
-## To be copied in the UI
-# mod_map_ui("map")
-
-## To be copied in the server
-# callModule(mod_map_server, "map")
