@@ -43,7 +43,7 @@ load_data_content <- function(output, session) {
 load_rain_content <- function(output, session) {
   ns <- session$ns
   output$tableauOutputRain <- renderUI({
-    div(style = "display: block; margin-left: auto; margin-right: auto; width: 1000px; height: 600px;",
+    div(style = "display: block; margin-left: auto; margin-right: auto; width: 800px; height: 600px;",
       tableauPublicViz(
         id = ns("tableauViz"),
         url = "https://public.tableau.com/views/MonthlyRainfall_16978543189640/Sheet1?:language=en-US&publish=yes&:display_count=n&:origin=viz_share_link",
@@ -57,7 +57,7 @@ load_rain_content <- function(output, session) {
 load_crash_content <- function(output, session) {
   ns <- session$ns
   output$tableauOutputCrash <- renderUI({
-    div(style = "display: block; margin-left: auto; margin-right: auto; width: 1500px; height: 600px;",
+    div(style = "display: block; margin-left: auto; margin-right: auto; width: 1000px; height: 700px;",
       tableauPublicViz(
         id = ns("tableauViz"),
         url = "https://public.tableau.com/views/numberofcrashesofeachhour/Sheet1?:language=en-US&publish=yes&:display_count=n&:origin=viz_share_link",
@@ -70,7 +70,7 @@ load_crash_content <- function(output, session) {
 load_volumn_content <- function(output, session) {
   ns <- session$ns
   output$tableauOutputVolumn <- renderUI({
-    div(style = "display: block; margin-left: auto; margin-right: auto; width: 1200px; height: 600px;",
+    div(style = "display: block; margin-left: auto; margin-right: auto; width: 1500px; height: 600px;",
       tableauPublicViz(
         id = ns("tableauViz"),
         url = "https://public.tableau.com/views/HourlyVehicleCount/Sheet1?:language=en-US&publish=yes&:display_count=n&:origin=viz_share_link",

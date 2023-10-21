@@ -8,7 +8,7 @@ get_golem_config(
   value,
   config = Sys.getenv("GOLEM_CONFIG_ACTIVE", Sys.getenv("R_CONFIG_ACTIVE", "default")),
   use_parent = TRUE,
-  file = app_sys("golem-config.yml")
+  file = app_sys("inst/golem-config.yml")
 )
 }
 \description{

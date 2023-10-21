@@ -5,6 +5,7 @@ app_ui <- function() {
     normalScrollElements = "body"
   )
 
+
   tagList(
     # External resources
     setUpTableauInShiny(),
@@ -25,19 +26,15 @@ app_ui <- function() {
         img = "www/img/mel4.jpg",
         menu = "home",
         div( 
-          style = "position: absolute; top: 0; left: 0; width: 35%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 1;"
+          style = "position: absolute; top: 0; left: 0; width: 45%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 1;"
         ),
         div( 
           style = "position: absolute; top: 10%; left: -2%; z-index: 2;",
-          h1("Melbourne", class = "header shadow-dark", style = "font-size: 6em; margin-bottom: 200px;"), 
+          h1("Melbourne", class = "header shadow-dark", style = "font-size: 5em; margin-bottom: 200px; max-width: 40%;"), 
           p("This app is designed to assist commuters on their daily journeys. Whether you're traveling by public transport, car, cycling or walking, our aim is to streamline your experience, provide timely information, and ensure that commuting is smooth and stress-free.", 
-            style = "color: white; max-width: 700px; text-align: left; font-size: 2em; margin-left: 100px;")
+            style = "color: white; max-width: 38%; text-align: left; font-size: 2em; margin-left: 100px;")
         )
       ),
-
-
-
-
 
 
       pageSection(

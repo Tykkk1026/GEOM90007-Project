@@ -17,7 +17,7 @@ get_golem_config <- function(
     )
   ),
   use_parent = TRUE,
-  file = app_sys("golem-config.yml")
+  file = app_sys("inst/golem-config.yml")
 ) {
   config::get(
     value = value,
