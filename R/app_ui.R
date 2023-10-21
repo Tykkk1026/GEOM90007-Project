@@ -1,5 +1,4 @@
-#' @import shiny
-#'
+
 source("R/tableau-in-shiny-v1.0.R")
 app_ui <- function() {
   options <- list(

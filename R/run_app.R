@@ -1,7 +1,4 @@
 #' Launch
-#' 
-#' Launche the Freedom of Press Shiny Application
-#'
 #' @export
 #' @import fullPage
 #' @importFrom shiny shinyApp

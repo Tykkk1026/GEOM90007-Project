@@ -7,5 +7,5 @@
 run_app()
 }
 \description{
-Launche the Freedom of Press Shiny Application
+Launch
 }

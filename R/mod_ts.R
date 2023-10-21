@@ -1,18 +1,5 @@
 # Module UI
 
-#' @title   mod_ts_ui and mod_ts_server
-#' @description  A shiny Module.
-#'
-#' @param id shiny id
-#' @param input internal
-#' @param output internal
-#' @param session internal
-#'
-#' @rdname mod_ts
-#'
-#' @keywords internal
-#' @export
-#' @importFrom shiny NS tagList
 
 source("R/tableau-in-shiny-v1.0.R")
 mod_ts_ui <- function(id) {

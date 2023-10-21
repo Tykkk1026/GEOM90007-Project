@@ -1,12 +1,3 @@
-#' map UI Function
-#'
-#' @description A shiny Module.
-#'
-#' @param id,input,output,session Internal parameters for {shiny}.
-#'
-#' @noRd
-#'
-#' @importFrom shiny NS tagList
 library(mapboxer)
 library(sf)
 library(geojsonsf)

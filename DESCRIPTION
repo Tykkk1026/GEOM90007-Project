@@ -1,25 +1,22 @@
 Package: app
-Title: 'Shiny' Application to Visualise the 'Freedom of Press Index'
+Title: Melbourne
 Version: 0.0.0.9000
-Description: 'Shiny' Application to Visualise the 'Freedom of Press Index'.
+Description: Melbourne
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports: 
-  emo,
   shiny,
   golem,
   dplyr,
   tidyr,
-  typedjs,
   fullPage,
   magrittr,
-  echarts4r,
   shinythemes,
-  shinyWidgets
+  mapboxer,
+  sf,
+  geojsonsf,
+  httr,
+  shinyjs,
 RoxygenNote: 7.2.3
 Remotes:
-  hadley/emo,
-  news-r/fopi,
-  JohnCoene/typed,
-  RinteRface/fullPage
