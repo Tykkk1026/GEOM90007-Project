@@ -17,7 +17,7 @@ app_ui <- function() {
       menu = c(
         "Home" = "home",
         "Map" = "map",
-        "Series" = "ts",
+        "Data Visualization" = "data",
         "About" = "about"
       ),
       pageSectionImage(
@@ -47,8 +47,8 @@ app_ui <- function() {
       ),
       pageSection(
         center = TRUE,
-        menu = "ts",
-        mod_ts_ui("ts")
+        menu = "data",
+        mod_data_ui("data")
       ),
       pageSection(
         center = TRUE,
